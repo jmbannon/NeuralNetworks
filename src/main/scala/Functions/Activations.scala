@@ -22,7 +22,7 @@ object Activations {
       1.0 / (exp(-1.0 * input) + 1.0)
     }
     override def d(input: DenseVector[Double]): DenseVector[Double] = {
-      input - pow(input, 2)
+      input :* (DenseVector.fill(input.length)(1.0) - input)
     }
   }
 

@@ -11,16 +11,16 @@ import scala.collection.immutable.HashMap
 object Costs {
   private val _quadratic = new Cost("quadratic") {
     override def apply(output: Double, exp_output: Double): Double = {
-      0.5 * Math.pow(output - exp_output, 2)
+      0.5 * Math.pow(exp_output - output, 2)
     }
     override def d(output: Double, exp_output: Double): Double = {
-      output - exp_output
+      exp_output - output
     }
     override def apply(output: DenseVector[Double], exp_output: DenseVector[Double]): Double = {
-      0.5 * sum(pow(output - exp_output, 2))
+      0.5 * sum(pow(exp_output - output, 2))
     }
     override def d(output: DenseVector[Double], exp_output: DenseVector[Double]): DenseVector[Double] = {
-      output - exp_output
+      exp_output - output
     }
   }
 

@@ -12,4 +12,20 @@ abstract class Cost(val _name: String) {
 
   def apply(output: DenseVector[Double], exp_output: DenseVector[Double]) : Double
   def d(input: DenseVector[Double], exp_output: DenseVector[Double]) : DenseVector[Double]
+
+  def apply(output: DenseMatrix[Double], exp_output: DenseMatrix[Double]) : DenseVector[Double] = {
+    val to_ret : DenseVector[Double] = DenseVector.zeros(output.size)
+    for (i <- 0 to (output.rows - 1)) {
+      to_ret(i) = apply(output(i, ::).t, exp_output(i, ::).t)
+    }
+    to_ret
+  }
+
+  def d(output: DenseMatrix[Double], exp_output: DenseMatrix[Double]) : DenseMatrix[Double] = {
+    for (i <- 0 to (output.rows - 1)) {
+      output(i, ::) := d(output(i, ::).t, exp_output(i, ::).t).t
+    }
+    output
+  }
+
 }

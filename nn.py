@@ -110,6 +110,19 @@ class FCNN():
                 # Otherwise dot with the previous layer's output
                 else:
                     layer_weight_shift[i] = layer_outputs[i-1].T.dot(layer_delta[i])
+            
+                print("Layer outputs:\n")
+                print(layer_outputs[i])
+                print("\n")
+                print("Layer Error:\n")
+                print(layer_error[i])
+                print("\n")
+                print("Layer Delta:\n")
+                print(layer_delta[i])
+                print("\n")
+                print("Layer weight shift\n")
+                print(layer_weight_shift[i])
+                print("\n")
 
             for i in range(0, num_layers):
                 if (iteration == 0):
@@ -157,23 +170,22 @@ class FCNN():
 
 def main():
     layer_stack = LayerStack()
-    lyr_0 = NetworkLayer(3, True)
+    lyr_0 = NetworkLayer(4, True)
     lyr_1 = NetworkLayer(2, True)
     lyr_2 = NetworkLayer(8)
     lyr_3 = NetworkLayer(5)
     lyr_4 = NetworkLayer(1)
     lyr_5 = NetworkLayer(5)
-    lyr_6 = NetworkLayer(1)
+    lyr_6 = NetworkLayer(1, True)
 
     layer_stack.append(lyr_0)
-    layer_stack.append(lyr_1)
     layer_stack.append(lyr_6)
 
-    x = np.array([[0, 0, 1], [0, 1, 1], [1, 0, 1], [0, 1, 0], [1, 0, 0], [1, 1, 1], [0, 0, 0]])
-    y = np.array([[0, 1, 1, 1, 1, 0, 0]]).T
+    x = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+    y = np.array([[0, 1, 1, 0]]).T
 
     neural_net = FCNN(layer_stack)
-    neural_net.train(x, y, learning_rate=1.0, momentum=0.0, epsilon=1e-1, iterations=100000000)
+    neural_net.train(x, y, learning_rate=1.0, momentum=0.0, epsilon=1e-1, iterations=1)
 
     x0_test = np.array([0, 1, 0])
     result = neural_net.infer(x0_test)[neural_net.net.length() - 1]
