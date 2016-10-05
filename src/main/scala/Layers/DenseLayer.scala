@@ -2,6 +2,8 @@ package Layers
 
 import Functions.{Activation, Activations}
 import breeze.linalg.{*, DenseMatrix, DenseVector, sum}
+import breeze.numerics.abs
+import breeze.stats.distributions.Rand
 
 import scala.annotation.meta.{getter, param, setter}
 
@@ -33,10 +35,10 @@ class DenseLayer(_output_dim: Int,
   def has_weights : Boolean = { _weights != null && (if (_use_bias) _bias != null else true) }
   def gen_weights = {
     if (_weights == null) {
-      _weights = DenseMatrix.rand(super.input_shape, super.output_shape)
+      _weights = abs(DenseMatrix.rand(super.input_shape, super.output_shape))
     }
     if (_use_bias && _bias == null) {
-      _bias = DenseVector.rand(super.output_shape)
+      _bias = abs(DenseVector.rand(super.output_shape))
     }
   }
 
@@ -45,10 +47,6 @@ class DenseLayer(_output_dim: Int,
 
   /** Predict with a single sample of training data. */
   def predict(inputs : DenseVector[Double]) : DenseVector[Double] = {
-
-    //println(inputs.asDenseMatrix)
-    //println(_weights)
-
     val cell_body : DenseVector[Double] = (inputs.asDenseMatrix * _weights).toDenseVector
 
     if (_use_bias) cell_body += _bias
@@ -57,6 +55,8 @@ class DenseLayer(_output_dim: Int,
 
   /** Predict with multiple samples of training data. */
   def predict(inputs : DenseMatrix[Double]) : DenseMatrix[Double] = {
-    return inputs(*, ::).map { row => predict(row) }
+    var cell_body : DenseMatrix[Double] = inputs * _weights
+    if (_use_bias) cell_body = cell_body(*, ::).map(row => row + _bias)
+    return _activation(cell_body)
   }
 }

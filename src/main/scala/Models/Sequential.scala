@@ -3,7 +3,7 @@ package Models
 import scala.collection.mutable.ListBuffer
 import Functions.{Cost, Costs}
 import Layers.DenseLayer
-import breeze.linalg.{*, DenseMatrix, DenseVector}
+import breeze.linalg.{*, DenseMatrix, DenseVector, sum}
 
 /**
   * Created by jb on 9/30/16.
@@ -51,6 +51,9 @@ class Sequential(val _layers: ListBuffer[DenseLayer] = ListBuffer()) {
       println(input_data.toString())
       println("------------------------------")
       println(_layers(0).display_name(0))
+      println("Weights")
+      println(_layers(0).weights)
+      println("Output")
       println(layer_outputs(0).toString)
     }
 
@@ -59,6 +62,9 @@ class Sequential(val _layers: ListBuffer[DenseLayer] = ListBuffer()) {
       if (verbose) {
         println("------------------------------")
         println(_layers(i).display_name(i))
+        println("Weights")
+        println(_layers(i).weights)
+        println("Output")
         println(layer_outputs(i).toString())
       }
     }
@@ -70,7 +76,7 @@ class Sequential(val _layers: ListBuffer[DenseLayer] = ListBuffer()) {
           labels: Array[String] = null,
           nr_epoch: Int = 100,
           batch_size: Int = 0,
-          learning_rate: Double = 0.001,
+          learning_rate: Double = 0.1,
           verbose: Boolean = false) = {
 
     val deltas = Array.ofDim[DenseMatrix[Double]](_nr_layers)
@@ -81,40 +87,66 @@ class Sequential(val _layers: ListBuffer[DenseLayer] = ListBuffer()) {
     val output_layer : Int = _nr_layers - 1
 
     for (iter <- 1 to nr_epoch) {
-      var i : Int = output_layer
       outputs = infer(train, verbose)
-//      println("we inferred!!!")
-      println("Outputs:")
-      println(outputs(i))
-      println("Expected outputs:")
-      println(targets)
+      if (verbose) {
+        println("Outputs | Expected Outputs")
+        for (samples <- 0 to (targets.rows - 1)) {
+          print(outputs(output_layer)(samples, ::).inner)
+          print("   ")
+          print(targets(samples, ::).inner)
+          print("\n")
+        }
+        println("------------------------------")
+      }
 
-      errors(i) = this._cost.d(outputs(i), targets).toDenseMatrix
-//      println("errors")
-//      println(errors(i))
-//      println(this._layers(i).step.d(outputs(i)))
-      deltas(i) = errors(i) :* this._layers(i).gradient(outputs(i))
-//      println("deltas")
-//      println(deltas(i))
-      shift(i) = outputs(i - 1) * deltas(i)
-//      println("shift")
-//      println(shift(i))
+      for (i <- output_layer to 0 by -1) {
+        if (i == output_layer) {
+          errors(i) = this._cost.d(outputs(i).copy, targets.copy).toDenseMatrix
+        } else {
+          errors(i) = deltas(i + 1).copy * _layers(i + 1).weights.copy.t
+        }
+        if (verbose) {
+          println("Errors")
+          println(errors(i))
+          println("------------------------------")
+        }
 
-      for (i <- (output_layer - 1) to 0) {
-        errors(i) = deltas(i + 1) * _layers(i + 1).weights.t
-        deltas(i) = errors(i) :* this._layers(i).gradient(outputs(i))
+        deltas(i) = errors(i).copy :* this._layers(i).gradient(outputs(i).copy)
+        if (verbose) {
+          println("Deltas")
+          println(deltas(i))
+          println("------------------------------")
+        }
 
         if (i != 0) {
-          shift(i) = deltas(i) * (outputs(i - 1))
+          shift(i) = outputs(i - 1).t * deltas(i).copy
         } else {
-          shift(i) = (deltas(i).t * train).t
+          shift(i) = train.copy.t * deltas(i).copy
+        }
+        if (verbose) {
+          println("Shift")
+          println(shift(i))
+          println("------------------------------")
         }
       }
 
       for (i <- 0 to output_layer) {
-        this._layers(i).weights_= (this._layers(i).weights + (-learning_rate * shift(i)))
+        this._layers(i).weights_= (this._layers(i).weights.copy + (learning_rate * shift(i).copy))
+        if (this._layers(i)._use_bias) {
+          val deltaBiasVec = sum(deltas(i)(::,*)).t
+          this._layers(i).bias_= (this._layers(i).bias.copy + (learning_rate * deltaBiasVec))
+        }
       }
     }
+    outputs = infer(train, verbose)
+    println("Outputs | Expected Outputs")
+    for (samples <- 0 to (targets.rows - 1)) {
+      print(outputs(output_layer)(samples, ::).inner)
+      print("   ")
+      print(targets(samples, ::).inner)
+      print("\n")
+    }
+    println("------------------------------")
   }
 
 }

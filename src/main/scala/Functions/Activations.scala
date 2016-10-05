@@ -17,13 +17,6 @@ object Activations {
     override def d(input: Double): Double = {
       input * (1 - input)
     }
-
-    override def apply(input: DenseVector[Double]): DenseVector[Double] = {
-      1.0 / (exp(-1.0 * input) + 1.0)
-    }
-    override def d(input: DenseVector[Double]): DenseVector[Double] = {
-      input :* (DenseVector.fill(input.length)(1.0) - input)
-    }
   }
 
   private val _tanh = new Activation("tanh") {
@@ -32,13 +25,6 @@ object Activations {
     }
     override def d(input: Double): Double = {
       1.0 - (input * input)
-    }
-
-    override def apply(input: DenseVector[Double]): DenseVector[Double] = {
-      tanh(input)
-    }
-    override def d(input: DenseVector[Double]): DenseVector[Double] = {
-      1.0 - (input :* input)
     }
   }
 
@@ -49,12 +35,6 @@ object Activations {
     override def d(input: Double): Double = {
       1.0
     }
-    override def apply(input: DenseVector[Double]): DenseVector[Double] = {
-      input
-    }
-    override def d(input: DenseVector[Double]): DenseVector[Double] = {
-      DenseVector.fill(input.length, 1.0)
-    }
   }
 
   private val _binarystep = new Activation("binarystep") {
@@ -63,12 +43,6 @@ object Activations {
     }
     override def d(input: Double): Double = {
       0.0
-    }
-    override def apply(input: DenseVector[Double]): DenseVector[Double] = {
-      input.map { x => if (x >= 0) 1.0 else 0.0 }
-    }
-    override def d(input: DenseVector[Double]): DenseVector[Double] = {
-      DenseVector.fill(input.length, 0.0)
     }
   }
 

@@ -10,20 +10,19 @@ abstract class Activation(val _name : String) {
   def apply(input: Double) : Double
   def d(input: Double) : Double
 
-  def apply(input: DenseVector[Double]) : DenseVector[Double]
-  def d(input: DenseVector[Double]) : DenseVector[Double]
+  def apply(input: DenseVector[Double]) : DenseVector[Double] = {
+    input.map(x => apply(x))
+  }
+
+  def d(input: DenseVector[Double]) : DenseVector[Double] = {
+    input.map(x => d(x))
+  }
 
   def apply(input: DenseMatrix[Double]) : DenseMatrix[Double] = {
-    for (i <- 0 to input.rows - 1) {
-      input(i, ::) := apply(input(i, ::).t).t
-    }
-    input
+    input.map(x => apply(x))
   }
 
   def d(input: DenseMatrix[Double]) : DenseMatrix[Double] = {
-    for (i <- 0 to input.rows - 1) {
-      input(i, ::) := d(input(i, ::).t).t
-    }
-    input
+    input.map(x => d(x))
   }
 }
