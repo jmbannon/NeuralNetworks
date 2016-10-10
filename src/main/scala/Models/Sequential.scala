@@ -9,9 +9,7 @@ import breeze.linalg.{*, DenseMatrix, DenseVector, sum}
   * Created by jb on 9/30/16.
   */
 class Sequential(val _layers: ListBuffer[DenseLayer] = ListBuffer()) {
-
   var _cost: Cost = null
-  var _nr_layers: Int = _layers.size
 
   def add(layer: DenseLayer) = {
     _layers.append(layer)
@@ -19,18 +17,16 @@ class Sequential(val _layers: ListBuffer[DenseLayer] = ListBuffer()) {
 
   def compile(cost: String) = {
     require(Costs.exists(cost.toLowerCase), "Cost function " + cost + " does not exist")
-    require(_layers(0).input_shape > 0, "Must specify input shape on input layer")
-
     _cost = Costs(cost)
-    _nr_layers = _layers.size
 
-    for (i <- 1 to (_nr_layers - 1)) {
-      _layers(i)._input_shape = _layers(i - 1).output_shape
-    }
+    for (i <- _layers.indices) {
+      if (i != 0) {
+        _layers(i)._input_shape = _layers(i - 1).output_shape
+      } else {
+        require(_layers(0).input_shape._is1D, "Must specify 1-D input shape on input layer")
+      }
 
-    for (i <- 0 to (_nr_layers - 1)) {
-      println("Generating weights for layer " + i)
-      if (!_layers(i).has_weights) {
+      if (!_layers(i).contains_weights) {
         _layers(i).gen_weights
       } else {
         require(_layers(i).weights.rows == _layers(i).input_shape, "Weight nr_rows must match input shape")
@@ -39,33 +35,34 @@ class Sequential(val _layers: ListBuffer[DenseLayer] = ListBuffer()) {
     }
   }
 
-  private def infer(input_data: DenseMatrix[Double],
-                    verbose: Boolean = false): Array[DenseMatrix[Double]] = {
+  def predict(input_data: DenseMatrix[Double],
+              verbose: Boolean = false): DenseMatrix[Double] = {
+    val output_layer: Int = _layers.size - 1
+    this.feed_forward(input_data, verbose)(output_layer)
+  }
+
+  private def feed_forward(input_data: DenseMatrix[Double],
+                           verbose: Boolean = false): Array[DenseMatrix[Double]] = {
 
     val layer_outputs = Array.ofDim[DenseMatrix[Double]](_layers.size)
 
-    layer_outputs(0) = _layers(0).predict(input_data)
-
     if (verbose) {
-      println("Input Data:")
-      println(input_data.toString())
       println("------------------------------")
-      println(_layers(0).display_name(0))
-      println("Weights")
-      println(_layers(0).weights)
-      println("Output")
-      println(layer_outputs(0).toString)
+      println("Feed forward")
     }
-
-    for (i <- 1 to _layers.size - 1) {
-      layer_outputs(i) = _layers(i).predict(layer_outputs(i - 1))
+    for (i <- _layers.indices) {
+      if (i != 0) {
+        layer_outputs(i) = _layers(i).step(layer_outputs(i - 1))
+      } else {
+        layer_outputs(i) = _layers(i).step(input_data)
+      }
       if (verbose) {
-        println("------------------------------")
         println(_layers(i).display_name(i))
         println("Weights")
         println(_layers(i).weights)
         println("Output")
         println(layer_outputs(i).toString())
+        println("------------------------------")
       }
     }
     return layer_outputs
@@ -79,15 +76,15 @@ class Sequential(val _layers: ListBuffer[DenseLayer] = ListBuffer()) {
           learning_rate: Double = 0.1,
           verbose: Boolean = false) = {
 
-    val deltas = Array.ofDim[DenseMatrix[Double]](_nr_layers)
-    val errors = Array.ofDim[DenseMatrix[Double]](_nr_layers)
-    val shift = Array.ofDim[DenseMatrix[Double]](_nr_layers)
+    val deltas = Array.ofDim[DenseMatrix[Double]](_layers.size)
+    val errors = Array.ofDim[DenseMatrix[Double]](_layers.size)
+    val shift = Array.ofDim[DenseMatrix[Double]](_layers.size)
 
-    var outputs = Array.ofDim[DenseMatrix[Double]](_nr_layers)
-    val output_layer : Int = _nr_layers - 1
+    var outputs = Array.ofDim[DenseMatrix[Double]](_layers.size)
+    val output_layer : Int = _layers.size - 1
 
     for (iter <- 1 to nr_epoch) {
-      outputs = infer(train, verbose)
+      outputs = feed_forward(train, verbose)
       if (verbose) {
         println("Outputs | Expected Outputs")
         for (samples <- 0 to (targets.rows - 1)) {
@@ -131,14 +128,14 @@ class Sequential(val _layers: ListBuffer[DenseLayer] = ListBuffer()) {
       }
 
       for (i <- 0 to output_layer) {
-        this._layers(i).weights_= (this._layers(i).weights.copy + (learning_rate * shift(i).copy))
-        if (this._layers(i)._use_bias) {
+        this._layers(i).updateWeights(learning_rate * shift(i).copy)
+        if (this._layers(i).use_bias) {
           val deltaBiasVec = sum(deltas(i)(::,*)).t
-          this._layers(i).bias_= (this._layers(i).bias.copy + (learning_rate * deltaBiasVec))
+          this._layers(i).updateBias(learning_rate * deltaBiasVec)
         }
       }
     }
-    outputs = infer(train, verbose)
+    outputs = feed_forward(train, verbose)
     println("Outputs | Expected Outputs")
     for (samples <- 0 to (targets.rows - 1)) {
       print(outputs(output_layer)(samples, ::).inner)
@@ -148,5 +145,4 @@ class Sequential(val _layers: ListBuffer[DenseLayer] = ListBuffer()) {
     }
     println("------------------------------")
   }
-
 }

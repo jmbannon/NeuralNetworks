@@ -1,4 +1,4 @@
-import Layers.DenseLayer
+import Layers.{DenseLayer, Shape}
 import breeze.linalg.{DenseMatrix, DenseVector}
 import Models.Sequential
 
@@ -7,14 +7,25 @@ import Models.Sequential
   */
 object Test {
   def main(args: Array[String]) {
-    val data : DenseMatrix[Double] = DenseMatrix((0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0))
-    val output = DenseMatrix(0.0, 1.0, 1.0, 0.0)
+    val data : DenseMatrix[Double] = DenseMatrix(
+      (0.0, 0.0, 0.0),
+      (0.0, 1.0, 1.0),
+      (1.0, 0.0, 0.0),
+      (1.0, 1.0, 1.0),
+      (1.0, 0.0, 1.0))
+
+    val output = DenseMatrix(0.0, 1.0, 1.0, 0.0, 1.0)
 
     val model = new Sequential()
-    model.add(new DenseLayer(4, _input_dim = 2, activation = "sigmoid", _use_bias = true, _weights = DenseMatrix((-.4568, .84936, .37506, -.67266), (.07277, .30548, .31998, -.46504))))
-    model.add(new DenseLayer(1, activation = "sigmoid", _use_bias = true, _weights = DenseMatrix(-.42911, -.45904, .32175, .5943)))
+    model.add(DenseLayer(4, input_dim = 3, activation = "sigmoid", use_bias = true))
+    model.add(DenseLayer(8, activation = "sigmoid", use_bias = true))
+    model.add(DenseLayer(1, activation = "sigmoid", use_bias = true))
     model.compile(cost = "quadratic")
-    model.fit(data, output, nr_epoch = 1000, verbose = false, learning_rate = 1.0)
+    model.fit(data, output, nr_epoch = 100000, verbose = false, learning_rate = 0.5)
 
+    println("meh")
+    println(model.predict(DenseVector(0.0, 1.0, 1.0).toDenseMatrix))
+    println(model.predict(DenseVector(1.0, 0.0, 1.0).toDenseMatrix))
+    println(model.predict(DenseVector(0.0, 1.0, 0.0).toDenseMatrix))
   }
 }

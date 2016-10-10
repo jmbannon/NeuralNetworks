@@ -5,16 +5,15 @@ import scala.annotation.meta.{param, setter}
 /**
   * Created by jb on 9/30/16.
   */
-abstract class Layer(var _input_shape: Int = -1,
-                     var _output_shape: Int = -1,
+abstract class Layer(var _input_shape: Shape = null,
+                     var _output_shape: Shape = null,
                      var _name : String = null) {
 
-  @param def input_shape : Int = _input_shape
-  @param def output_shape : Int = _output_shape
-  @param def shape : (Int, Int) = (_input_shape, _output_shape)
+  @param def input_shape : Shape = _input_shape
+  @param def output_shape : Shape = _output_shape
 
-  @setter def input_shape_= (that: Int) { _input_shape = that }
-  @setter def output_shape_= (that: Int) { _output_shape = that }
+  @setter def input_shape_= (that: Shape) { _input_shape = that }
+  @setter def output_shape_= (that: Shape) { _output_shape = that }
 
   def display_name(layer_idx: Int): String = {
     val stb = StringBuilder.newBuilder

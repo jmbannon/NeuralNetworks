@@ -7,22 +7,12 @@ import breeze.linalg.{DenseMatrix, DenseVector}
   */
 abstract class Activation(val _name : String) {
   def name = _name
-  def apply(input: Double) : Double
-  def d(input: Double) : Double
+  def apply(x: Double) : Double
+  def d(x: Double) : Double
 
-  def apply(input: DenseVector[Double]) : DenseVector[Double] = {
-    input.map(x => apply(x))
-  }
+  def apply(x: DenseVector[Double]) : DenseVector[Double] = { x.map(xi => apply(xi)) }
+  def d(x: DenseVector[Double]) : DenseVector[Double] = { x.map(xi => d(xi)) }
 
-  def d(input: DenseVector[Double]) : DenseVector[Double] = {
-    input.map(x => d(x))
-  }
-
-  def apply(input: DenseMatrix[Double]) : DenseMatrix[Double] = {
-    input.map(x => apply(x))
-  }
-
-  def d(input: DenseMatrix[Double]) : DenseMatrix[Double] = {
-    input.map(x => d(x))
-  }
+  def apply(x: DenseMatrix[Double]) : DenseMatrix[Double] = { x.map(xi => apply(xi)) }
+  def d(x: DenseMatrix[Double]) : DenseMatrix[Double] = { x.map(xi => d(xi)) }
 }

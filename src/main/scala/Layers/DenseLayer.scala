@@ -10,53 +10,60 @@ import scala.annotation.meta.{getter, param, setter}
 /**
   * Created by jb on 9/26/16.
   */
-class DenseLayer(_output_dim: Int,
-                 _input_dim: Int = -1,
-                 var activation: String = "linear",
-                 var _weights: DenseMatrix[Double] = null,
-                 var _bias: DenseVector[Double] = null,
-                 var _use_bias: Boolean = true,
-                 _name: String = null) extends Layer(_input_dim, _output_dim, _name) {
 
-  activation = activation.toLowerCase
-  require(Activations.exists(activation), "Activation function " + activation + " does not exist")
-  //require(_bias.length == _output_dim, "Bias vector must be of length _output_dim")
+object DenseLayer {
+  def apply(output_dim: Int,
+            input_dim: Int = Shape.UNDEFINED_DIMENSION,
+            activation: String = "linear",
+            weights: DenseMatrix[Double] = null,
+            bias: DenseVector[Double] = null,
+            use_bias: Boolean = true,
+            name: String = null): DenseLayer = {
+    new DenseLayer(new Shape(output_dim), new Shape(input_dim), activation, weights, bias, use_bias, name)
+  }
+}
 
-  private val _activation : Activation = Activations(activation)
+class DenseLayer(output_shape: Shape,
+                 input_shape: Shape,
+                 var activation_str: String,
+                 var weights: DenseMatrix[Double],
+                 var bias: DenseVector[Double],
+                 var use_bias: Boolean,
+                 _name: String) extends Layer(input_shape, output_shape, _name) {
 
-  @param def step : Activation = { _activation }
+  activation_str = activation_str.toLowerCase
+  require(Activations.exists(activation_str), "Activation function " + activation_str + " does not exist")
 
-  @getter def bias = _bias
-  @getter def weights = _weights
+  val activation: Activation = Activations(activation_str)
 
-  @setter def bias_= (that: DenseVector[Double]) { _bias = that }
-  @setter def weights_= (that: DenseMatrix[Double]) { _weights = that }
+  def updateWeights(weightShift: DenseMatrix[Double]) = { weights += weightShift }
+  def updateBias(biasShift: DenseVector[Double]) = { biasShift += biasShift }
 
-  def has_weights : Boolean = { _weights != null && (if (_use_bias) _bias != null else true) }
+  def contains_weights : Boolean = { weights != null && (if (use_bias) bias != null else true) }
   def gen_weights = {
-    if (_weights == null) {
-      _weights = abs(DenseMatrix.rand(super.input_shape, super.output_shape))
+    if (weights == null) {
+      weights = DenseMatrix.rand(super.input_shape(0), super.output_shape(0))
     }
-    if (_use_bias && _bias == null) {
-      _bias = abs(DenseVector.rand(super.output_shape))
+    if (use_bias && bias == null) {
+      bias = DenseVector.rand(super.output_shape(0))
     }
   }
 
-  def gradient(inputs: DenseVector[Double]) : DenseVector[Double] = _activation.d(inputs)
-  def gradient(inputs: DenseMatrix[Double]) : DenseMatrix[Double] = _activation.d(inputs)
+  def gradient(inputs: DenseVector[Double]) : DenseVector[Double] = activation.d(inputs)
+  def gradient(inputs: DenseMatrix[Double]) : DenseMatrix[Double] = activation.d(inputs)
 
   /** Predict with a single sample of training data. */
-  def predict(inputs : DenseVector[Double]) : DenseVector[Double] = {
-    val cell_body : DenseVector[Double] = (inputs.asDenseMatrix * _weights).toDenseVector
+  def step(inputs : DenseVector[Double]) : DenseVector[Double] = {
+    val cell_body = (inputs.asDenseMatrix * weights).toDenseVector
 
-    if (_use_bias) cell_body += _bias
-    return _activation(cell_body)
+    if (use_bias) cell_body += bias
+    return activation(cell_body)
   }
 
   /** Predict with multiple samples of training data. */
-  def predict(inputs : DenseMatrix[Double]) : DenseMatrix[Double] = {
-    var cell_body : DenseMatrix[Double] = inputs * _weights
-    if (_use_bias) cell_body = cell_body(*, ::).map(row => row + _bias)
-    return _activation(cell_body)
+  def step(inputs: DenseMatrix[Double]) : DenseMatrix[Double] = {
+    var cell_body = inputs * weights
+    if (use_bias) cell_body = cell_body(*, ::).map(row => row + bias)
+    return activation(cell_body)
   }
 }
