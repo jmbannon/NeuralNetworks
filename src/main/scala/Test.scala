@@ -1,4 +1,5 @@
 import Layers.{DenseLayer, Shape}
+import NNMath.Volume
 import breeze.linalg.{DenseMatrix, DenseVector}
 import Models.Sequential
 
@@ -27,5 +28,18 @@ object Test {
     println(model.predict(DenseVector(0.0, 1.0, 1.0).toDenseMatrix))
     println(model.predict(DenseVector(1.0, 0.0, 1.0).toDenseMatrix))
     println(model.predict(DenseVector(0.0, 1.0, 0.0).toDenseMatrix))
+
+    println("VOLUME TEST")
+    volumeTest()
+  }
+
+  def volumeTest() {
+    val layers: Int = 5
+    val nrows: Int = 10
+    val ncols: Int = 15
+    val vol = Volume.rand(nrows, ncols, layers)
+
+    println(vol.toString())
+    println(vol(0 to 2, 0 to 2).toString)
   }
 }
